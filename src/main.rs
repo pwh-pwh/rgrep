@@ -110,6 +110,7 @@ async fn main() {
     let glob = Glob::new(format!("./{}", args.file_name).as_str()).expect("input file_name parse err").compile_matcher();
     let (tx, mut rx) = mpsc::unbounded_channel();
     read_dirs(Path::new("./"), &glob, &args.content,tx.clone());
+    drop(tx);
     while let Some(v) = rx.recv().await{
         v.print_result();
     }
