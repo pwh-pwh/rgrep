@@ -6,6 +6,9 @@ use clap::Parser;
 use globset::{Glob, GlobMatcher};
 use colored::*;
 use regex::Regex;
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::UnboundedSender;
+use tokio::task;
 
 #[derive(Parser, Debug)]
 struct GrepArgs {
@@ -82,24 +85,34 @@ impl Grep for MatchResult {
 }
 
 //单线程版本
-fn read_dirs(p: &Path, glob: &GlobMatcher, match_str: &str) {
+fn read_dirs(p: &Path, glob: &GlobMatcher, match_str: &str,tx: UnboundedSender<MatchResult>) {
     if p.is_dir() {
         for entry in fs::read_dir(p).unwrap() {
-            read_dirs(&entry.unwrap().path(), glob, match_str);
+            read_dirs(&entry.unwrap().path(), glob, match_str,tx.clone());
         }
     } else {
         if glob.is_match(p) {
             let file_name = p.to_str().unwrap();
-            MatchResult::new(file_name.into()).search(match_str).print_result();
+            let file_name = file_name.to_string();
+            let match_str = match_str.to_string();
+            task::spawn(async move{
+                let mut x = MatchResult::new(file_name);
+                x.search(&match_str);
+                tx.send(x).unwrap();
+            });
         }
     }
 }
 
-
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = GrepArgs::parse();
     let glob = Glob::new(format!("./{}", args.file_name).as_str()).expect("input file_name parse err").compile_matcher();
-    read_dirs(Path::new("./"), &glob, &args.content);
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    read_dirs(Path::new("./"), &glob, &args.content,tx.clone());
+    while let Some(v) = rx.recv().await{
+        v.print_result();
+    }
 }
 
 #[cfg(test)]

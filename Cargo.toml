@@ -10,5 +10,5 @@ clap = {version = "4.2.1",features = ["derive"]}
 colored = "2.0.0"
 globset = "0.4.10"
 regex = "1.7.3"
-tokio = "1.27.0"
+tokio = {version = "1.27.0",features = ["full"]}
 
