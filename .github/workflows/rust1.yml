@@ -1,6 +1,6 @@
 name: build
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
 jobs:
   build:
     name: build
@@ -55,10 +55,10 @@ jobs:
           cd archive
           if [ "${{ matrix.build }}" = "windows" ]; then
             cp "../target/${{ matrix.target }}/release/rgrep.exe" ./
-            7z a "${{ matrix.archive-name }}" LICENSE README.md rgrep.exe
+            7z a "${{ matrix.archive-name }}" rgrep.exe
           else
-            cp "../target/${{ matrix.target }}/release/sgf-render" ./
-            tar -czf "${{ matrix.archive-name }}" LICENSE README.md rgrep
+            cp "../target/${{ matrix.target }}/release/rgrep" ./
+            tar -czf "${{ matrix.archive-name }}" rgrep
           fi
       - name: Upload archive
         uses: actions/upload-artifact@v1
